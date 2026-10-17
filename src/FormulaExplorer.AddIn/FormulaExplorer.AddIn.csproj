@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <!-- WinForms only for AxHost.GetIPictureDispFromPicture (ribbon icon). -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>FormulaExplorer.AddIn</RootNamespace>
+    <AssemblyName>FormulaExplorer.AddIn</AssemblyName>
+    <Product>Formula Explorer</Product>
+    <Description>Formula Explorer for Excel: navigate complex formulas.</Description>
+    <Version>1.0.0</Version>
+    <!-- Only the English resources of the framework/packages are ever needed. -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- Excel-DNA -->
+    <ExcelAddInName>Formula Explorer</ExcelAddInName>
+    <ExcelAddInFileName>FormulaExplorer</ExcelAddInFileName>
+    <ExcelAddInExplicitExports>true</ExcelAddInExplicitExports>
+    <ExcelAddInComServerRegistration>false</ExcelAddInComServerRegistration>
+    <!-- Excel 64-bit only: skip the 32-bit .xll (and its packed copy). The packed 64-bit file is
+         bin/<Configuration>/net10.0-windows/publish/FormulaExplorer64-packed.xll -->
+    <ExcelDnaCreate32BitAddIn>false</ExcelDnaCreate32BitAddIn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ExcelDna.AddIn" Version="1.9.0" />
+    <PackageReference Include="Microsoft.Office.Interop.Excel" Version="16.0.18925.20022" />
+  </ItemGroup>
+
+  <!-- Embed the Excel interop types (NoPIA). The PIA package references the Office "office" assembly, which does not
+       exist on a .NET (Core) machine; without embedding, the first use of Application fails with FileNotFound 'office'.
+       Roslyn embeds only the interop types the code actually uses. -->
+  <Target Name="EmbedExcelInteropTypes" DependsOnTargets="FindReferenceAssembliesForReferences" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <_ExcelPia Include="@(ReferencePathWithRefAssemblies)" Condition="'%(Filename)' == 'Microsoft.Office.Interop.Excel'">
+        <EmbedInteropTypes>true</EmbedInteropTypes>
+      </_ExcelPia>
+      <ReferencePathWithRefAssemblies Remove="@(_ExcelPia)" />
+      <ReferencePathWithRefAssemblies Include="@(_ExcelPia)" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <!-- Avoid WinForms/WPF ambiguities (Application, Cursors, MessageBox, Point...). -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Ribbon icon (rendered by scripts/render-icon.ps1). Loaded by Ribbon/RibbonIcon.cs through its logical name. -->
+    <EmbeddedResource Include="Ribbon\globe16.png" LogicalName="FormulaExplorer.Ribbon.globe16.png" />
+    <EmbeddedResource Include="Ribbon\globe32.png" LogicalName="FormulaExplorer.Ribbon.globe32.png" />
+    <EmbeddedResource Include="Ribbon\globe64.png" LogicalName="FormulaExplorer.Ribbon.globe64.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FormulaExplorer.Core\FormulaExplorer.Core.csproj" />
+  </ItemGroup>
+
+</Project>

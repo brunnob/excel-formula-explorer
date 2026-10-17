@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Live check of ExcelGateway against its own INVISIBLE Excel instance (not part of FormulaExplorer.slnx).
+    Run it with: dotnet run, from the GatewayHarness folder.
+    Exit code = number of failed checks. No screenshots and no mouse or keyboard input; the instance is always
+    quit and only that PID is ever killed.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\FormulaExplorer.AddIn\FormulaExplorer.AddIn.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+TestResults/
+artifacts/
+*.zip
+!docs/referencias/**
+tools/FormulaExplorer.UiSnapshot/out/
+tests/integration/out/
+dist/
