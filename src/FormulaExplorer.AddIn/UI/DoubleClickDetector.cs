@@ -13,6 +13,12 @@ internal enum PressAction
 
     /// <summary>A double click whose first press never raised NodeClicked for this node: raise both, click first.</summary>
     ClickThenDoubleClick,
+
+    /// <summary>
+    /// The second press of a double click whose first press already replaced the text (a click drills down into the
+    /// precedent's formula): ignore it, so a habitual double click does not drill two levels.
+    /// </summary>
+    Ignore,
 }
 
 /// <summary>
@@ -31,6 +37,8 @@ internal sealed class DoubleClickDetector
     private object? _node;
     private Point _point;
     private int _timeMs;
+    private bool _hasPress;   // _point/_timeMs describe the last link press
+    private bool _replaced;   // the text was replaced since that press
 
     /// <param name="clockMs">Monotonic milliseconds.</param>
     /// <param name="intervalMs">Maximum time between the two presses.</param>
@@ -68,12 +76,24 @@ internal sealed class DoubleClickDetector
     {
         int now = timestampMs ?? unchecked((int)_clockMs());
         int elapsed = unchecked(now - _timeMs); // wraps correctly across the 49.7-day TickCount rollover
-        bool sameNode = ReferenceEquals(_node, node);
         var (slopWidth, slopHeight) = _slop();
-        bool second = sameNode
+        bool close = _hasPress
             && elapsed >= 0 && elapsed <= _intervalMs()
             && Math.Abs(point.X - _point.X) <= slopWidth / 2
             && Math.Abs(point.Y - _point.Y) <= slopHeight / 2;
+
+        if (_replaced)
+        {
+            _replaced = false;
+            if (close || clickCount == 2)
+            {
+                Reset();
+                return PressAction.Ignore;
+            }
+        }
+
+        bool sameNode = ReferenceEquals(_node, node);
+        bool second = sameNode && close;
 
         if (sameNode && (second || clickCount == 2))
         {
@@ -89,9 +109,25 @@ internal sealed class DoubleClickDetector
         _node = node;
         _point = point;
         _timeMs = now;
+        _hasPress = true;
         return PressAction.Click;
     }
 
-    /// <summary>Forgets the previous press (press elsewhere, new text, window closing).</summary>
-    public void Reset() => _node = null;
+    /// <summary>
+    /// The text was replaced (new root or loading). The previous press can no longer pair with a node, but a press
+    /// that would have completed a double click with it is swallowed (<see cref="PressAction.Ignore"/>).
+    /// </summary>
+    public void ContentReplaced()
+    {
+        _node = null;
+        _replaced = _hasPress;
+    }
+
+    /// <summary>Forgets the previous press (press elsewhere, window closing).</summary>
+    public void Reset()
+    {
+        _node = null;
+        _hasPress = false;
+        _replaced = false;
+    }
 }

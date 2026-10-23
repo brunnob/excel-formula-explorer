@@ -12,8 +12,7 @@ With Formula Explorer you can:
 - see each reference in its own color,
 - see the precedent cells outlined in the same color on the sheet,
 - point at any part of a formula and see what it returns,
-- click a reference to go to it,
-- double-click a reference to open its formula,
+- click a reference to go to it (and, if that cell has a formula, to open it),
 - go back step by step.
 
 ---
@@ -86,31 +85,35 @@ I19:J19 containing
 
 ## 5. Click to go to a reference
 
-Click a reference, a name, or a function that returns a range (like `OFFSET` or `INDEX`):
+Click a reference, a name, or a function that returns a range (like `OFFSET` or `INDEX`). One click is enough:
 
 - Excel selects that cell or range, even on another sheet.
-- The part you clicked turns **gold**.
-- The formula in the window stays the same, so you can click other parts.
+- If the target is a single cell **with a formula**, the window immediately shows **that cell's formula** (see step 6).
+- Otherwise (a range, a constant or an empty cell), the part you clicked turns **gold** and the formula in the window
+  stays the same, so you can click other parts.
 
 ![After a click, the name Hundred is gold and Excel shows its cell](docs/images/click.png)
 
 If the target is on a hidden sheet or in a collapsed group, Formula Explorer shows it for you. It hides it again when you
 move on.
 
-## 6. Double-click to open a precedent's formula
+## 6. Open a precedent's formula
 
-Double-click a reference whose cell has a formula. The window now shows **that cell's formula**.
+Click a reference whose cell has a formula. The window now shows **that cell's formula**, and the selection in Excel
+moves to that cell. There is nothing else to do: a single click navigates and opens it in one go.
 
-![After a double-click, the window shows the formula of K31](docs/images/drill.png)
+![After a click, the window shows the formula of K31](docs/images/drill.png)
 
 Keep going as deep as you need:
 
 ![A long formula: OFFSET is gold, and the text wraps](docs/images/offset.png)
 
+If you double-click out of habit, it still goes only one level down: the second click is ignored.
+
 ## 7. Go back and close
 
 - **Back** retraces your steps:
-  - If something is gold, Back returns the selection to the formula's cell.
+  - If something is gold (you clicked a range or a value), Back returns the selection to the formula's cell.
   - Otherwise, Back returns to the previous formula.
 - **Close** (or **Esc**) closes the window. Excel keeps the current selection.
 

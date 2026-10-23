@@ -137,4 +137,89 @@ public class DoubleClickDetectorTests
         detector.OnLinkPress(_a, new Point(10, 10), 1, timestampMs: int.MaxValue - 100);
         Assert.Equal(PressAction.DoubleClick, detector.OnLinkPress(_a, new Point(10, 10), 1, timestampMs: int.MinValue + 100));
     }
+
+    // ---- ContentReplaced: a click that drilled down swallows the second press of a habitual double click ----------
+
+    [Fact]
+    public void ASecondClosePressAfterContentReplacedIsIgnored()
+    {
+        var detector = Create();
+        detector.OnLinkPress(_a, new Point(10, 10), 1);
+        detector.ContentReplaced();
+        _now += 100;
+        Assert.Equal(PressAction.Ignore, detector.OnLinkPress(_b, new Point(11, 10), 1));
+    }
+
+    [Fact]
+    public void AfterTheIgnoredPressTheNextOneIsAnOrdinaryClick()
+    {
+        var detector = Create();
+        detector.OnLinkPress(_a, new Point(10, 10), 1);
+        detector.ContentReplaced();
+        _now += 100;
+        detector.OnLinkPress(_b, new Point(10, 10), 1);
+        _now += 100;
+        Assert.Equal(PressAction.Click, detector.OnLinkPress(_b, new Point(10, 10), 1));
+    }
+
+    [Fact]
+    public void ALatePressAfterContentReplacedIsAClick()
+    {
+        var detector = Create();
+        detector.OnLinkPress(_a, new Point(10, 10), 1);
+        detector.ContentReplaced();
+        _now += 501;
+        Assert.Equal(PressAction.Click, detector.OnLinkPress(_b, new Point(10, 10), 1));
+    }
+
+    [Fact]
+    public void AFarPressAfterContentReplacedIsAClick()
+    {
+        var detector = Create(slopWidth: 4, slopHeight: 4);
+        detector.OnLinkPress(_a, new Point(10, 10), 1);
+        detector.ContentReplaced();
+        _now += 100;
+        Assert.Equal(PressAction.Click, detector.OnLinkPress(_b, new Point(40, 10), 1));
+    }
+
+    [Fact]
+    public void ClickCountTwoAfterContentReplacedIsIgnoredEvenWhenLateAndFar()
+    {
+        var detector = Create();
+        detector.OnLinkPress(_a, new Point(10, 10), 1);
+        detector.ContentReplaced();
+        _now += 900;
+        Assert.Equal(PressAction.Ignore, detector.OnLinkPress(_b, new Point(80, 80), 2));
+    }
+
+    [Fact]
+    public void ContentReplacedWithoutAnyPressChangesNothing()
+    {
+        var detector = Create();
+        detector.ContentReplaced();
+        Assert.Equal(PressAction.Click, detector.OnLinkPress(_a, new Point(10, 10), 1));
+    }
+
+    [Fact]
+    public void ResetClearsThePendingIgnore()
+    {
+        var detector = Create();
+        detector.OnLinkPress(_a, new Point(10, 10), 1);
+        detector.ContentReplaced();
+        detector.Reset();
+        _now += 100;
+        Assert.Equal(PressAction.Click, detector.OnLinkPress(_b, new Point(10, 10), 1));
+    }
+
+    [Fact]
+    public void ContentReplacedDoesNotLetTheOldNodePairWithANewPress()
+    {
+        var detector = Create();
+        detector.OnLinkPress(_a, new Point(10, 10), 1);
+        detector.ContentReplaced();
+        _now += 100;
+        detector.OnLinkPress(_a, new Point(10, 10), 1); // ignored
+        _now += 100;
+        Assert.Equal(PressAction.Click, detector.OnLinkPress(_a, new Point(10, 10), 1));
+    }
 }

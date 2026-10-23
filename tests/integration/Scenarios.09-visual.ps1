@@ -99,13 +99,14 @@ function S20 {
     if ($tipRect) { Check-Tooltip $fe $tipRect 'site-03' }
     $cases += $cmp
 
-    # ---- 2011-oficial-08: the K$31 reference gold before drilling, pointer on it ----
+    # ---- 2011-oficial-08: a reference gold after a click, pointer on it (K$31 in the original; it now drills on one
+    #      click, so the gold look is checked on $I27, whose cell has no formula) ----
     $s = Open-Explorer $fe 'Val_FO' 'K33'
     [FeWin]::Foreground([IntPtr][int64]$s.explorerHwnd); Start-Sleep -Milliseconds 300
-    $i = Ix $s 'K$31' 1 1
+    $i = Ix $s '$I27' 1 1
     $p = Hover-Real $fe $s $i
     Click-At $p.X $p.Y
-    $r = Wait-Timed $fe { (Get-GoldText $_) -ceq 'K$31' } 3000
+    $r = Wait-Timed $fe { (Get-GoldText $_) -ceq '$I27' } 3000
     Start-Sleep -Milliseconds 900
     $s = Get-FeState $fe
     $sp = Get-SpanRect $s ([int]$s.view.goldStart) ([int]$s.view.goldLength)
@@ -113,7 +114,7 @@ function S20 {
     $gold = [FeWin2]::CountColor($bmp, 0, 0, $sp.W, $sp.H, $script:Gold, 3)
     $gray = [FeWin2]::CountColor($bmp, 0, 0, $sp.W, $sp.H, $script:Gray, 3)
     $bmp.Dispose()
-    Check 'oficial-08: gold #FFD700 behind K$31, no gray, no tooltip' ($gold -gt 150 -and $gray -lt 15 -and -not $s.view.tooltipVisible) "gold=$gold gray=$gray tip=$($s.view.tooltipVisible)"
+    Check 'oficial-08: gold #FFD700 behind $I27, no gray, no tooltip' ($gold -gt 150 -and $gray -lt 15 -and -not $s.view.tooltipVisible) "gold=$gold gray=$gray tip=$($s.view.tooltipVisible)"
     $cmp = Capture-ExplorerComparison $fe 'oficial-08' '2011-oficial-08-1m55-ref-dourada-antes-drill.png' $s 40
     $cases += $cmp
 

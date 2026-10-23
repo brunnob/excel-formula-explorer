@@ -131,13 +131,13 @@ function S12 {
     # --- Enter after clicking Back triggers Back ---
     $s = Open-Explorer $fe 'Val_FO' 'K33'
     [FeWin]::Foreground([IntPtr][int64]$s.explorerHwnd); Start-Sleep -Milliseconds 300
-    Click-Node $fe $s 'K$31' 1 0 -Double
+    Click-Node $fe $s 'K$31' 1 0
     $r = Wait-Timed $fe { $_.session.root.address -eq '$K$31' -and -not $_.view.isLoading -and $_.view.displayText -eq '=J31+K19' } 3500
     $s = $r.state
     Check 'setup: drilled to K31 (stack 1)' ($r.ok -and (Get-Stack $s).Count -eq 1) $s.session.root.address
     Start-Sleep -Milliseconds 300
-    Click-Node $fe $s 'J31'
-    $r = Wait-Timed $fe { (Get-GoldText $_) -ceq 'J31' } 2500
+    Click-Node $fe $s 'K19'
+    $r = Wait-Timed $fe { (Get-GoldText $_) -ceq 'K19' } 2500
     $s = $r.state
     Start-Sleep -Milliseconds 350
     # click Back with the mouse: gold removed, Back still enabled (stack not empty) and now has keyboard focus

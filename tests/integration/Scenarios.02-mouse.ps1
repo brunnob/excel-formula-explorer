@@ -137,7 +137,7 @@ function Get-Foreground-Timed($state, [int]$WaitMs = 700) {
 }
 
 function S4 {
-    Begin-Scenario 'S4' 'Real mouse clicks: link navigation + gold, window stays active, double click drills, Back and Close buttons'
+    Begin-Scenario 'S4' 'Real mouse clicks: link navigation + gold, window stays active, one click drills into a formula cell, a habitual double click drills only once, Back and Close buttons'
     Reset-Env
     $fe = $script:fe
     $s = Open-Explorer $fe 'Val_FO' 'K33'
@@ -183,17 +183,17 @@ function S4 {
     Check 'explorer still foreground after the 2nd click' (Get-Foreground-Timed $r.state 900) (Describe-Fg)
     $s2 = $r.state
 
-    # --- real double click on K$31: first click navigates, second drills ---
+    # --- ONE real click on K$31 (a cell with a formula): navigates and drills at once ---
     $iK31 = Ix $s2 'K$31'
     $p = Char-Point $s2 $iK31
-    Click-At $p.X $p.Y -Double -GapMs 110
+    Click-At $p.X $p.Y
     $r = Wait-Timed $fe { $_.session.root.address -eq '$K$31' -and -not $_.view.isLoading -and $_.view.displayText -eq '=J31+K19' } 3000
     $s3 = $r.state
-    Check 'double click on K$31 drills down: root K31, text =J31+K19' $r.ok @{ root = $s3.session.root.address; text = $s3.view.displayText }
+    Check 'single click on K$31 drills down: root K31, text =J31+K19' $r.ok @{ root = $s3.session.root.address; text = $s3.view.displayText }
     Check 'stack has the previous root (K33)' ((Get-Stack $s3).Count -eq 1 -and (Get-Stack $s3)[0].address -eq '$K$33') (Get-Stack $s3)
     Check 'gold cleared after drilling, Back enabled' ($null -eq $s3.view.goldStart -and $s3.view.backEnabled) @{ gold = (Get-GoldText $s3); back = $s3.view.backEnabled }
     Check 'Excel selection is K31' ($fe.Excel.ActiveCell.Address($false, $false) -eq 'K31') $fe.Excel.ActiveCell.Address($false, $false)
-    Check 'the explorer STAYED the foreground window through click + double click' (Get-Foreground-Timed $s3 900) (Describe-Fg)
+    Check 'the explorer STAYED the foreground window through the clicks and the drill' (Get-Foreground-Timed $s3 900) (Describe-Fg)
     Save-FeShot $fe 'S4-after-drill' | Out-Null
 
     # --- real click on the Back button ---
@@ -204,6 +204,21 @@ function S4 {
     Check 'real click on Back returns to K33' $r.ok @{ root = $s4.session.root.address; text = $s4.view.displayText }
     Check 'Back disabled again, Excel selected K33' (-not $s4.view.backEnabled -and $fe.Excel.ActiveCell.Address($false, $false) -eq 'K33') @{ back = $s4.view.backEnabled; cell = $fe.Excel.ActiveCell.Address($false, $false) }
     Check 'explorer still foreground after clicking Back' (Get-Foreground-Timed $s4 700) (Describe-Fg)
+
+    # --- a habitual real double click on K$31 drills ONE level only (the 2nd press lands on the new text and is ignored) ---
+    Start-Sleep -Milliseconds 400
+    $iK31 = Ix $s4 'K$31'
+    $p = Char-Point $s4 $iK31
+    Click-At $p.X $p.Y -Double -GapMs 110
+    $r = Wait-Timed $fe { $_.session.root.address -eq '$K$31' -and -not $_.view.isLoading -and $_.view.displayText -eq '=J31+K19' } 3000
+    Start-Sleep -Milliseconds 700
+    $sD = Get-FeState $fe
+    Check 'double click on K$31 drills exactly one level: root K31, stack [K33], no gold' ($r.ok -and $sD.session.root.address -eq '$K$31' -and (Get-Stack $sD).Count -eq 1 -and $null -eq $sD.view.goldStart) @{ root = $sD.session.root.address; stack = (Get-Stack $sD).Count; gold = (Get-GoldText $sD) }
+    $back = $sD.buttons.back
+    Click-At ([int](($back[0] + $back[2]) / 2)) ([int](($back[1] + $back[3]) / 2))
+    $r = Wait-Timed $fe { $_.session.root.address -eq '$K$33' -and -not $_.view.isLoading -and $_.view.displayText -like '=1/*' } 3000
+    $s4 = $r.state
+    Check 'Back after the double click returns to K33' $r.ok @{ root = $s4.session.root.address }
 
     # --- a click on the INACTIVE explorer both activates it and acts ---
     $er = Get-Rect (Get-ExcelHwnd $fe)
@@ -247,8 +262,8 @@ function S5 {
     [FeWin]::Foreground([IntPtr]$hwnd); Start-Sleep -Milliseconds 300
     $cell = { $fe.Excel.ActiveCell.Address($false, $false) }
 
-    # click K$31, Hundred, $I27, K$31
-    foreach ($n in @(@('K$31', 1, 0), @('Hundred', 1, 2), @('$I27', 1, 0), @('K$31', 1, 0))) {
+    # click Hundred and $I27 (constants: they only turn gold)
+    foreach ($n in @(@('Hundred', 1, 2), @('$I27', 1, 0))) {
         Click-Node $fe $s $n[0] $n[1] $n[2]
         $want = $n[0]
         $r = Wait-Timed $fe { (Get-GoldText $_) -ceq $want } 2500
@@ -257,13 +272,13 @@ function S5 {
         Start-Sleep -Milliseconds 350   # more than a double-click time between separate clicks
     }
     $s = Get-FeState $fe
-    Check 'after 4 clicks: root unchanged (K33), stack empty, gold on K$31' ($s.session.root.address -eq '$K$33' -and (Get-Stack $s).Count -eq 0 -and (Get-GoldText $s) -ceq 'K$31') @{ root = $s.session.root.address; gold = (Get-GoldText $s) }
+    Check 'after 2 clicks: root unchanged (K33), stack empty, gold on $I27' ($s.session.root.address -eq '$K$33' -and (Get-Stack $s).Count -eq 0 -and (Get-GoldText $s) -ceq '$I27') @{ root = $s.session.root.address; gold = (Get-GoldText $s) }
 
-    # double-click K$31 -> drill to K31
-    Click-Node $fe $s 'K$31' 1 0 -Double
+    # one click on K$31 -> navigates and drills to K31
+    Click-Node $fe $s 'K$31' 1 0
     $r = Wait-Timed $fe { $_.session.root.address -eq '$K$31' -and -not $_.view.isLoading -and $_.view.displayText -eq '=J31+K19' } 3500
     $s = $r.state
-    Check 'double-click K$31 drills: =J31+K19, stack [K33], selection K31' ($r.ok -and (Get-Stack $s).Count -eq 1 -and (& $cell) -eq 'K31') @{ text = $s.view.displayText; stack = (Get-Stack $s).Count; sel = (& $cell) }
+    Check 'click K$31 drills: =J31+K19, stack [K33], selection K31' ($r.ok -and (Get-Stack $s).Count -eq 1 -and (& $cell) -eq 'K31') @{ text = $s.view.displayText; stack = (Get-Stack $s).Count; sel = (& $cell) }
     # K19 sits in the collapsed outline group (row 19 hidden): zero-height areas are skipped, so only J31 gets a box.
     Check 'overlay redrawn for the new formula (J31 box; K19 is in a hidden row)' ((Get-Overlay $s).Count -eq 1) (Get-Overlay $s)
     Start-Sleep -Milliseconds 300
@@ -273,16 +288,11 @@ function S5 {
     $r = Wait-Timed $fe { (Get-GoldText $_) -ceq 'K19' } 2500
     Check 'click K19: gold K19 and Excel selects K19 (row 19 unhidden by the outline rule)' ($r.ok -and (& $cell) -eq 'K19') @{ gold = (Get-GoldText $r.state); sel = (& $cell) }
     Start-Sleep -Milliseconds 350
+    # click J31 (a cell with a formula): navigates and drills at once, gold cleared
     Click-Node $fe $r.state 'J31'
-    $r = Wait-Timed $fe { (Get-GoldText $_) -ceq 'J31' } 2500
-    Check 'click J31: gold J31, selection J31' ($r.ok -and (& $cell) -eq 'J31') @{ gold = (Get-GoldText $r.state); sel = (& $cell) }
-    Start-Sleep -Milliseconds 350
-    $s = $r.state
-    # double click J31 -> drill
-    Click-Node $fe $s 'J31' 1 0 -Double
     $r = Wait-Timed $fe { $_.session.root.address -eq '$J$31' -and -not $_.view.isLoading -and $_.view.displayText -like '=SUM(*' } 3500
     $s = $r.state
-    Check 'double-click J31 drills: root J31 with the OFFSET formula, stack depth 2' ($r.ok -and (Get-Stack $s).Count -eq 2) @{ root = $s.session.root.address; text = $s.view.displayText; stack = (Get-Stack $s).Count }
+    Check 'click J31 drills: root J31 with the OFFSET formula, stack depth 2, selection J31, no gold' ($r.ok -and (Get-Stack $s).Count -eq 2 -and (& $cell) -eq 'J31' -and $null -eq $s.view.goldStart) @{ root = $s.session.root.address; text = $s.view.displayText; stack = (Get-Stack $s).Count; sel = (& $cell); gold = (Get-GoldText $s) }
     Save-FeShot $fe 'S5-at-J31' | Out-Null
     Start-Sleep -Milliseconds 300
 

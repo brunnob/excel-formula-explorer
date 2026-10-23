@@ -248,14 +248,22 @@ public sealed class ExplorerSession : INodeInfoProvider, IDisposable
     {
         var display = _display;
         if (display is null) return;
-        Execute("click", () => Click(display, node), userCommand: true);
+        var attempt = new ClickAttempt(); // shared by the busy retries of this one click
+        Execute("click", () => ClickAndDrill(display, node, attempt), userCommand: true);
     }
 
+    /// <summary>
+    /// A double click needs nothing more: its first click already navigated and, for a cell holding a formula, drilled
+    /// down (the view swallows the second press when the text was replaced in between).
+    /// </summary>
     private void OnNodeDoubleClicked(object? sender, SyntaxNode node)
     {
-        var display = _display;
-        if (display is null) return;
-        Execute("double click", () => DoubleClick(display, node), userCommand: true);
+    }
+
+    /// <summary>State of one user click across its busy retries.</summary>
+    private sealed class ClickAttempt
+    {
+        public bool Navigated;
     }
 
     private void OnBackRequested(object? sender, EventArgs e) => Execute("back", Back, userCommand: true);
@@ -293,13 +301,20 @@ public sealed class ExplorerSession : INodeInfoProvider, IDisposable
     }
 
     /// <summary>
-    /// Double click: the first click of the pair already made the node gold (do it now if it did not). Then, when the
-    /// target is a single cell holding a formula, the explorer drills down into it; otherwise it only navigates.
+    /// Single click on a link: navigate to the target (the node becomes gold). When the target is a single cell holding
+    /// a formula, drill down into it at once: the window shows that cell's formula and the old root goes on the Back
+    /// stack. Otherwise (range, constant, empty cell) the node stays gold. A busy retry does not navigate twice.
     /// </summary>
-    private void DoubleClick(FormulaDisplay display, SyntaxNode node)
+    private void ClickAndDrill(FormulaDisplay display, SyntaxNode node, ClickAttempt attempt)
     {
         if (!ReferenceEquals(display, _display) || !_displayNodes.Contains(node)) return;
-        if (_gold?.Node != node && !Click(display, node)) return;
+        // A fresh click always navigates (also on the gold node: the user may have moved away in Excel); only a busy
+        // retry of the same click skips the navigation it already did.
+        if (!(attempt.Navigated && _gold?.Node == node))
+        {
+            if (!Click(display, node)) return;
+            attempt.Navigated = true;
+        }
 
         var target = _gold!.Target;
         if (!target.IsSingleCell || !target.FirstCellHasFormula) return;

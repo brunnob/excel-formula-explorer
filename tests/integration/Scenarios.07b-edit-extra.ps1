@@ -40,7 +40,7 @@ function S15b {
     # ---------- (A) Back while a cell is being edited ----------
     $s = Open-Explorer $fe 'Val_FO' 'K33'
     [FeWin]::Foreground([IntPtr][int64]$s.explorerHwnd); Start-Sleep -Milliseconds 300
-    Click-Node $fe $s 'K$31' 1 0 -Double
+    Click-Node $fe $s 'K$31' 1 0
     $r = Wait-Timed $fe { $_.session.root.address -eq '$K$31' -and -not $_.view.isLoading } 3500
     Check 'setup: drilled to K31 (stack 1)' ($r.ok -and (Get-Stack $r.state).Count -eq 1) $r.state.session.root.address
     Start-Sleep -Milliseconds 400

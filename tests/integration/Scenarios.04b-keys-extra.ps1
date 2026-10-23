@@ -15,14 +15,22 @@ function New-DrillChain($ws) {
     Set-Formula $ws 'M14' 5
 }
 
+function Get-DoubleClickTimeMs {
+    if (-not ('FeDblClk' -as [type])) {
+        Add-Type 'using System.Runtime.InteropServices; public static class FeDblClk { [DllImport("user32.dll")] public static extern uint GetDoubleClickTime(); }'
+    }
+    [FeDblClk]::GetDoubleClickTime()
+}
+
 function Drill-Chain($fe, [int]$Levels) {
     for ($k = 1; $k -le $Levels; $k++) {
         $s = Get-FeState $fe
-        Click-Node $fe $s "M$(10 + $k)" 1 1 -Double
+        Click-Node $fe $s "M$(10 + $k)" 1 1
         $want = '$M$' + (10 + $k)
         $r = Wait-Timed $fe { $_.session.root.address -eq $want -and -not $_.view.isLoading } 4000
         if (-not $r.ok) { return $false }
-        Start-Sleep -Milliseconds 250
+        # More than the double-click time: a quick second click on the new formula is (by design) ignored.
+        Start-Sleep -Milliseconds ([int](Get-DoubleClickTimeMs) + 150)
     }
     $true
 }

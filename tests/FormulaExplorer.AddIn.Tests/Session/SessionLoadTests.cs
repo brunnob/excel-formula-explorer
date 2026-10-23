@@ -233,7 +233,7 @@ public class SessionLoadTests
         rig.Session.Start();
         rig.Settle();
 
-        rig.Click("K$31");
+        rig.Click("$I27");
 
         Assert.Single(rig.Gateway.NavigateCalls);
         Assert.Equal(1, rig.View.ShowFormulaCount);
@@ -244,7 +244,7 @@ public class SessionLoadTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.Click("K$31");
+        rig.Click("$I27");
 
         var snapshot = rig.Snapshot;
 
@@ -252,9 +252,9 @@ public class SessionLoadTests
         Assert.Equal(Rig.Loc("K33"), snapshot.Root);
         Assert.Equal(Rig.K33Formula, snapshot.DisplayText);
         Assert.Empty(snapshot.Stack);
-        Assert.Equal(Rig.K33Formula.IndexOf("K$31", StringComparison.Ordinal), snapshot.GoldStart);
+        Assert.Equal(Rig.K33Formula.IndexOf("$I27", StringComparison.Ordinal), snapshot.GoldStart);
         Assert.Equal(4, snapshot.GoldLength);
-        Assert.Equal(Rig.Loc("K31"), snapshot.GoldTarget);
+        Assert.Equal(Rig.Loc("I27"), snapshot.GoldTarget);
         Assert.True(snapshot.BackEnabled);
         Assert.Equal(2, snapshot.Boxes.Count);
     }

@@ -3,37 +3,36 @@ using FormulaExplorer.Core.Values;
 
 namespace FormulaExplorer.AddIn.Tests.Sessions;
 
-/// <summary>Single click (gold), double click (drill down), blocked and failed navigation.</summary>
+/// <summary>Single click (gold, or drill down into a formula cell), ignored double click, blocked and failed navigation.</summary>
 public class SessionNavigationTests
 {
     private static readonly CellLocation K33 = Rig.Loc("K33");
     private static readonly CellLocation K31 = Rig.Loc("K31");
 
-    // ---- single click ------------------------------------------------------------------------------------------
+    // ---- single click on a link whose target has no formula or is a range: gold only ------------------------------
 
     [Fact]
-    public void ClickingALinkNavigatesKeepingTheRootAndMakesItGold()
+    public void ClickingALinkToAConstantNavigatesKeepingTheRootAndMakesItGold()
     {
         var rig = Rig.VideoModel();
         rig.Start();
 
-        rig.Click("K$31");
+        rig.Click("$I27");
 
         var call = Assert.Single(rig.Gateway.NavigateCalls);
-        Assert.Equal((K31, (CellLocation?)K33), call);
-        Assert.Equal("K$31", rig.View.GoldText);
-        Assert.Equal(K31, rig.Snapshot.GoldTarget);
+        Assert.Equal((Rig.Loc("I27"), (CellLocation?)K33), call);
+        Assert.Equal("$I27", rig.View.GoldText);
+        Assert.Equal(Rig.Loc("I27"), rig.Snapshot.GoldTarget);
         Assert.True(rig.View.BackEnabled);
     }
 
     [Fact]
-    public void AClickNeverChangesTheDisplayedFormulaNorTheStack()
+    public void AClickOnANonFormulaLinkNeverChangesTheDisplayedFormulaNorTheStack()
     {
         var rig = Rig.VideoModel();
         rig.Start();
         int formulas = rig.View.ShowFormulaCount;
 
-        rig.Click("K$31");
         rig.Click("Hundred");
         rig.Click("$I27");
 
@@ -50,12 +49,12 @@ public class SessionNavigationTests
         var rig = Rig.VideoModel();
         rig.Start();
 
-        rig.Click("K$31");
+        rig.Click("$I27");
         rig.Click("Hundred");
 
         Assert.Equal("Hundred", rig.View.GoldText);
         Assert.Equal(Rig.Loc("B1", Rig.Assumptions), rig.Snapshot.GoldTarget);
-        Assert.Equal(new[] { "Gold:K$31", "Gold:Hundred" }, rig.View.Log.Where(l => l.StartsWith("Gold:")));
+        Assert.Equal(new[] { "Gold:$I27", "Gold:Hundred" }, rig.View.Log.Where(l => l.StartsWith("Gold:")));
     }
 
     [Fact]
@@ -80,11 +79,12 @@ public class SessionNavigationTests
         var rig = Rig.VideoModel();
         rig.Start();
 
-        rig.Click("K$31");
-        rig.Click("K$31");
+        rig.Click("$I27");
+        rig.Click("$I27");
 
+        // A fresh click always navigates (the user may have moved away in Excel meanwhile).
         Assert.Equal(2, rig.Gateway.NavigateCalls.Count);
-        Assert.Equal("K$31", rig.View.GoldText);
+        Assert.Equal("$I27", rig.View.GoldText);
         Assert.Empty(rig.Snapshot.Stack);
     }
 
@@ -144,12 +144,12 @@ public class SessionNavigationTests
         var rig = Rig.VideoModel();
         rig.Gateway.NavigationResults[Rig.Loc("B1", Rig.Assumptions)] = new NavigationResult(NavigationStatus.Blocked, "blocked");
         rig.Start();
-        rig.Click("K$31");
+        rig.Click("$I27");
 
         rig.Click("Hundred");
 
-        Assert.Equal("K$31", rig.View.GoldText);
-        Assert.Equal(K31, rig.Snapshot.GoldTarget);
+        Assert.Equal("$I27", rig.View.GoldText);
+        Assert.Equal(Rig.Loc("I27"), rig.Snapshot.GoldTarget);
         Assert.True(rig.View.BackEnabled);
     }
 
@@ -184,17 +184,17 @@ public class SessionNavigationTests
         Assert.False(rig.View.BackEnabled);
     }
 
-    // ---- double click ------------------------------------------------------------------------------------------
+    // ---- single click on a formula cell: navigate and drill down -------------------------------------------------
 
     [Fact]
-    public void DoubleClickOnASingleCellWithAFormulaDrillsDown()
+    public void ClickOnASingleCellWithAFormulaNavigatesAndDrillsDownAtOnce()
     {
         var rig = Rig.VideoModel();
         rig.Start();
+
         rig.Click("K$31");
 
-        rig.DoubleClick("K$31");
-
+        Assert.Equal((K31, (CellLocation?)K33), Assert.Single(rig.Gateway.NavigateCalls));
         var snapshot = rig.Snapshot;
         Assert.Equal(K31, snapshot.Root);
         Assert.Equal(new[] { K33 }, snapshot.Stack);
@@ -210,7 +210,7 @@ public class SessionNavigationTests
         var rig = Rig.VideoModel();
         rig.Start();
 
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
 
         var (root, boxes) = rig.Overlay.ShowCalls[^1];
         Assert.Equal(K31, root);
@@ -223,9 +223,8 @@ public class SessionNavigationTests
         var rig = Rig.VideoModel();
         rig.Start();
         var oldBoxes = rig.Overlay.Boxes;
-        rig.Click("K$31");
 
-        rig.View.DoubleClick(rig.View.Node("K$31"));
+        rig.View.Click(rig.View.Node("K$31"));
         rig.Scheduler.RunPosted();
 
         Assert.True(rig.View.IsLoading);
@@ -244,7 +243,7 @@ public class SessionNavigationTests
         rig.Start();
         int mark = rig.View.Log.Count;
 
-        rig.View.DoubleClick(rig.View.Node("K$31"));
+        rig.View.Click(rig.View.Node("K$31"));
         rig.Settle();
 
         var log = rig.View.Log.Skip(mark).ToList();
@@ -256,41 +255,57 @@ public class SessionNavigationTests
     }
 
     [Fact]
-    public void DoubleClickWithoutAPreviousClickNavigatesFirstThenDrills()
-    {
-        var rig = Rig.VideoModel();
-        rig.Start();
-
-        rig.View.RaiseDoubleClickOnly(rig.View.Node("K$31"));
-        rig.Settle();
-
-        Assert.Equal((K31, (CellLocation?)K33), Assert.Single(rig.Gateway.NavigateCalls));
-        Assert.Equal(K31, rig.Snapshot.Root);
-        Assert.Equal(new[] { K33 }, rig.Snapshot.Stack);
-    }
-
-    [Fact]
-    public void DoubleClickOnAnotherNodeThanTheGoldClicksFirst()
+    public void ClickOnAFormulaCellAfterAnotherGoldDrillsAndClearsTheGold()
     {
         var rig = Rig.VideoModel();
         rig.Start();
         rig.Click("Hundred");
 
-        rig.View.RaiseDoubleClickOnly(rig.View.Node("K$31"));
-        rig.Settle();
+        rig.Click("K$31");
 
         Assert.Equal(K31, rig.Snapshot.Root);
+        Assert.Equal(new[] { K33 }, rig.Snapshot.Stack);
         Assert.Equal(2, rig.Gateway.NavigateCalls.Count);
+        Assert.Equal("(none)", rig.View.GoldText);
     }
 
     [Fact]
-    public void DoubleClickOnARangeOnlyNavigates()
+    public void ADoubleClickEventAloneIsIgnoredBySession()
+    {
+        var rig = Rig.VideoModel();
+        rig.Start();
+
+        rig.View.RaiseDoubleClickOnly(rig.View.Node("K$31"));
+        rig.Settle();
+
+        Assert.Empty(rig.Gateway.NavigateCalls);
+        Assert.Equal(K33, rig.Snapshot.Root);
+        Assert.Empty(rig.Snapshot.Stack);
+        Assert.Equal("(none)", rig.View.GoldText);
+    }
+
+    [Fact]
+    public void ADoubleClickEventAfterTheDrillDoesNotDrillAgain()
+    {
+        var rig = Rig.VideoModel();
+        rig.Start();
+
+        rig.View.DoubleClick(rig.View.Node("K$31"));
+        rig.Settle();
+
+        Assert.Equal(K31, rig.Snapshot.Root);
+        Assert.Equal(new[] { K33 }, rig.Snapshot.Stack);
+        Assert.Single(rig.Gateway.NavigateCalls);
+    }
+
+    [Fact]
+    public void ClickOnARangeOnlyNavigates()
     {
         var rig = Rig.VideoModel();
         rig.Gateway.Active = Rig.Loc("J31");
         rig.Start();
 
-        rig.DoubleClick("OFFSET($I$19,0,0,1,Aqui_Per)");
+        rig.Click("OFFSET($I$19,0,0,1,Aqui_Per)");
 
         Assert.Equal(Rig.Loc("J31"), rig.Snapshot.Root);
         Assert.Empty(rig.Snapshot.Stack);
@@ -300,13 +315,13 @@ public class SessionNavigationTests
     }
 
     [Fact]
-    public void DoubleClickOnACellWithoutAFormulaOnlyNavigates()
+    public void ClickOnACellWithoutAFormulaOnlyNavigates()
     {
         var rig = Rig.VideoModel();
         rig.Gateway.Active = K31;
         rig.Start();
 
-        rig.DoubleClick("K19");
+        rig.Click("K19");
 
         Assert.Equal(K31, rig.Snapshot.Root);
         Assert.Empty(rig.Snapshot.Stack);
@@ -316,14 +331,13 @@ public class SessionNavigationTests
     }
 
     [Fact]
-    public void DoubleClickWhenTheTargetCellVanishedStaysOnTheRootWithGold()
+    public void ClickWhenTheTargetCellVanishedStaysOnTheRootWithGold()
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.Click("K$31");
         rig.Gateway.Cells.Remove(K31);
 
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
 
         Assert.Equal(K33, rig.Snapshot.Root);
         Assert.Empty(rig.Snapshot.Stack);
@@ -339,14 +353,14 @@ public class SessionNavigationTests
         rig.Gateway.Active = FakeGateway.Loc("S", "A1");
         rig.Start();
 
-        rig.DoubleClick("A1");
-        rig.DoubleClick("A1");
+        rig.Click("A1");
+        rig.Click("A1");
 
         Assert.Equal(new[] { FakeGateway.Loc("S", "A1") }, rig.Snapshot.Stack);
     }
 
     [Fact]
-    public void DoubleClickOnAThreeDReferenceDrillsIntoItsFirstSheet()
+    public void ClickOnAThreeDReferenceDrillsIntoItsFirstSheet()
     {
         var rig = new Rig();
         rig.Gateway.Formula("S", "A1", "=SUM(Sheet2:Sheet4!B2)")
@@ -355,7 +369,7 @@ public class SessionNavigationTests
         rig.Gateway.Active = FakeGateway.Loc("S", "A1");
         rig.Start();
 
-        rig.DoubleClick("Sheet2:Sheet4!B2");
+        rig.Click("Sheet2:Sheet4!B2");
 
         Assert.Equal(FakeGateway.Loc("Sheet2", "B2"), rig.Snapshot.Root);
         Assert.Equal(new[] { FakeGateway.Loc("S", "A1") }, rig.Snapshot.Stack);

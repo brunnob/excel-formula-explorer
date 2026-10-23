@@ -10,8 +10,9 @@ public class SessionBackTests
     private static readonly CellLocation J31 = Rig.Loc("J31");
 
     /// <summary>
-    /// 2:00-2:50 of the official video: K33 → click K$31, Hundred, $I27, K$31 → double click (drill) to K31 → click K19,
-    /// J31 → drill to J31 → click OFFSET → Back (gold cleared, J31 selected) → Back (K31) → Back (K33).
+    /// The official video under the single-click flow: K33 → click $I27 and Hundred (constants: only gold) → click K$31
+    /// drills to K31 → click K19 (gold) → click J31 drills to J31 → click OFFSET (range: gold) → Back (gold cleared,
+    /// J31 selected) → Back (K31) → Back (K33).
     /// </summary>
     [Fact]
     public void OriginalVideoSequence()
@@ -21,29 +22,27 @@ public class SessionBackTests
         Assert.Equal(Rig.K33Formula, rig.Text);
         Assert.False(rig.View.BackEnabled);
 
-        // Clicks only move the gold: nothing is pushed, the formula does not change.
-        rig.Click("K$31");
+        // Links to constants only move the gold: nothing is pushed, the formula does not change.
         rig.Click("Hundred");
         rig.Click("$I27");
-        rig.Click("K$31");
-        Assert.Equal("K$31", rig.View.GoldText);
+        Assert.Equal("$I27", rig.View.GoldText);
         Assert.Empty(rig.Snapshot.Stack);
         Assert.True(rig.View.BackEnabled);
         Assert.All(rig.Gateway.NavigateCalls, c => Assert.Equal(K33, c.AlsoKeep));
 
-        // Double click on the gold K$31: drill down.
-        rig.DoubleClick("K$31");
+        // One click on K$31 (a cell with a formula): navigates and drills down at once.
+        rig.Click("K$31");
         Assert.Equal(K31, rig.Snapshot.Root);
         Assert.Equal(new[] { K33 }, rig.Snapshot.Stack);
         Assert.Equal(Rig.K31Formula, rig.Text);
         Assert.Equal("(none)", rig.View.GoldText);
+        Assert.True(rig.View.BackEnabled);
 
         rig.Click("K19");
-        rig.Click("J31");
-        Assert.Equal("J31", rig.View.GoldText);
+        Assert.Equal("K19", rig.View.GoldText);
         Assert.Equal(new[] { K33 }, rig.Snapshot.Stack);
 
-        rig.DoubleClick("J31");
+        rig.Click("J31");
         Assert.Equal(J31, rig.Snapshot.Root);
         Assert.Equal(new[] { K33, K31 }, rig.Snapshot.Stack);
         Assert.Equal(Rig.J31Formula, rig.Text);
@@ -106,7 +105,7 @@ public class SessionBackTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.Click("K$31");
+        rig.Click("$I27");
 
         rig.Back();
 
@@ -123,7 +122,7 @@ public class SessionBackTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
         rig.Click("K19");
 
         rig.Back();
@@ -138,7 +137,7 @@ public class SessionBackTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
         int mark = rig.View.Log.Count;
 
         rig.View.PressBack();
@@ -159,8 +158,8 @@ public class SessionBackTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
-        rig.DoubleClick("J31");
+        rig.Click("K$31");
+        rig.Click("J31");
         Assert.Equal(new[] { K33, K31 }, rig.Snapshot.Stack);
         rig.Gateway.Cells.Remove(K31);
 
@@ -177,7 +176,7 @@ public class SessionBackTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
         rig.Gateway.Cells.Remove(K33);
 
         rig.Back();
@@ -193,8 +192,8 @@ public class SessionBackTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
-        rig.DoubleClick("J31");
+        rig.Click("K$31");
+        rig.Click("J31");
         rig.Gateway.NavigationResults[K31] = new NavigationResult(NavigationStatus.Failed, null);
 
         rig.Back();
@@ -208,7 +207,7 @@ public class SessionBackTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
         rig.Gateway.NavigationResults[K33] = new NavigationResult(NavigationStatus.Blocked, "blocked!");
 
         rig.Back();
@@ -224,7 +223,7 @@ public class SessionBackTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
         rig.Gateway.Cells.Remove(K31);
         rig.Gateway.RaiseCellsChanged(K31);
         rig.Settle();
@@ -264,10 +263,10 @@ public class SessionBackTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
         rig.Back();
 
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
 
         Assert.Equal(K31, rig.Snapshot.Root);
         Assert.Equal(new[] { K33 }, rig.Snapshot.Stack);

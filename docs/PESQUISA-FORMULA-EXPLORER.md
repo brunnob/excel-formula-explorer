@@ -189,7 +189,7 @@ quase certamente assim que o original detectava as "Range Functions" e montava o
 ## 6. Casos de borda
 
 ### Decisões de projeto
-1. **Descer para o precedente = duplo-clique** na referência. O primeiro clique do par já navega e deixa dourado.
+1. **Descer para o precedente = um único clique** na referência quando o destino é uma célula única com fórmula (decisão alterada em 2026-10-23). O clique navega, empilha a raiz antiga no Back e mostra a fórmula nova, sem dourado. Para intervalos, constantes e células vazias, o clique só navega e o nó fica dourado. Um duplo-clique habitual desce apenas um nível: o segundo clique é ignorado. O original usava dois cliques (o primeiro navegava e deixava dourado, o segundo descia).
 2. **Tudo em inglês**: textos da UI, tooltips e fórmula como em `Range.Formula`, com números em formato invariante (`1.062`). Português "não existe".
 3. **Bordas dos precedentes via camada transparente** sobreposta ao Excel, sem alterar a pasta, feita direito desde o início.
 4. **Abas ocultas e grupos recolhidos**: reexibir/expandir ao navegar e **reocultar/recolher ao sair** do destino. Exceção: se o usuário fechar a janela parado no destino, ele fica visível. Linhas e colunas ocultas manualmente são apenas selecionadas.

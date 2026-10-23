@@ -50,7 +50,7 @@ public class SessionEventTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.Click("K$31");
+        rig.Click("$I27");
 
         rig.Gateway.UserSelects(J31);
         rig.Settle();
@@ -66,7 +66,7 @@ public class SessionEventTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.Click("K$31");
+        rig.Click("$I27");
 
         rig.Gateway.UserSelects(K33);
         rig.Settle();
@@ -164,13 +164,13 @@ public class SessionEventTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.Click("K$31");
+        rig.Click("$I27");
 
         rig.Gateway.RaiseCellsChanged(Rig.Loc("A1"));
         rig.Settle();
 
         Assert.Equal(1, rig.View.ShowLoadingCount);
-        Assert.Equal("K$31", rig.View.GoldText);
+        Assert.Equal("$I27", rig.View.GoldText);
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class SessionEventTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
         rig.Click("K19");
         Assert.Equal("K19", rig.View.GoldText);
 
@@ -228,7 +228,7 @@ public class SessionEventTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
         rig.Click("K19");
         int clears = rig.Overlay.ClearCalls;
 
@@ -302,13 +302,13 @@ public class SessionEventTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.Click("K$31");
+        rig.Click("$I27");
         var boxes = rig.Overlay.Boxes;
 
         rig.Gateway.RaiseValuesInvalidated();
         rig.Settle();
 
-        Assert.Equal("K$31", rig.View.GoldText);
+        Assert.Equal("$I27", rig.View.GoldText);
         Assert.Same(boxes, rig.Overlay.Boxes);
     }
 
@@ -327,15 +327,15 @@ public class SessionEventTests
             refreshesDuringClick = rig.View.RefreshHoverCount;
         };
 
-        rig.View.Click(rig.View.Node("K$31"));
+        rig.View.Click(rig.View.Node("$I27"));
 
         Assert.Equal(0, refreshesDuringClick);
         Assert.Equal(0, rig.View.RefreshHoverCount);
-        Assert.Equal("K$31", rig.View.GoldText);
+        Assert.Equal("$I27", rig.View.GoldText);
 
         rig.Scheduler.RunPosted();
         Assert.Equal(1, rig.View.RefreshHoverCount);
-        Assert.Equal("K$31", rig.View.GoldText);
+        Assert.Equal("$I27", rig.View.GoldText);
     }
 
     [Fact]
@@ -351,11 +351,11 @@ public class SessionEventTests
             refreshesDuringClick = rig.View.RefreshHoverCount;
         };
 
-        rig.View.Click(rig.View.Node("K$31"));
+        rig.View.Click(rig.View.Node("$I27"));
 
         Assert.Equal(0, refreshesDuringClick); // not run inside Goto
         Assert.Equal(1, rig.View.RefreshHoverCount); // but right after the command
-        Assert.Equal("K$31", rig.View.GoldText);
+        Assert.Equal("$I27", rig.View.GoldText);
     }
 
     [Fact]
@@ -363,9 +363,8 @@ public class SessionEventTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.Click("K$31");
 
-        rig.View.DoubleClick(rig.View.Node("K$31"));
+        rig.View.Click(rig.View.Node("K$31"));
         rig.Gateway.RaiseUserSelectionChanged(K31);
         Assert.Equal(K31, rig.Snapshot.Root); // the drill itself already ran
         rig.Settle();
@@ -387,10 +386,10 @@ public class SessionEventTests
             rig.View.Click(hundred); // e.g. a message pump inside Goto delivers another click
         };
 
-        rig.View.Click(rig.View.Node("K$31"));
+        rig.View.Click(rig.View.Node("$I27"));
 
         Assert.Single(rig.Gateway.NavigateCalls); // the nested click did not run yet
-        Assert.Equal("K$31", rig.View.GoldText);
+        Assert.Equal("$I27", rig.View.GoldText);
 
         rig.Settle();
 

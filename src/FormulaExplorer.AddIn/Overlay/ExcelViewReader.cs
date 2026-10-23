@@ -96,7 +96,12 @@ internal sealed class ExcelViewReader
             sb.Append(pane.ScrollRow).Append(',').Append(pane.ScrollColumn).Append(',')
               .Append(visible.get_Address(false, false, XL.XlReferenceStyle.xlA1)).Append(',')
               .Append(Convert.ToDouble(visible.Width, CultureInfo.InvariantCulture).ToString("R", CultureInfo.InvariantCulture)).Append(',')
-              .Append(Convert.ToDouble(visible.Height, CultureInfo.InvariantCulture).ToString("R", CultureInfo.InvariantCulture)).Append(';');
+              .Append(Convert.ToDouble(visible.Height, CultureInfo.InvariantCulture).ToString("R", CultureInfo.InvariantCulture)).Append(',');
+            // Where the first visible cell is drawn: smooth (pixel) scrolling by touchpad or by dragging the scroll bar can
+            // move the view without changing ScrollRow/ScrollColumn or the visible range.
+            int left = (int)Math.Floor(Convert.ToDouble(visible.Left, CultureInfo.InvariantCulture));
+            int top = (int)Math.Floor(Convert.ToDouble(visible.Top, CultureInfo.InvariantCulture));
+            sb.Append(pane.PointsToScreenPixelsX(left)).Append(',').Append(pane.PointsToScreenPixelsY(top)).Append(';');
         }
 
         return sb.ToString();

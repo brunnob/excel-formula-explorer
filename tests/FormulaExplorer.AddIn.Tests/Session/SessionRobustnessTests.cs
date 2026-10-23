@@ -52,13 +52,13 @@ public class SessionRobustnessTests
         rig.Start();
         rig.Gateway.Busy["NavigateTo"] = 2;
 
-        rig.View.Click(rig.View.Node("K$31"));
+        rig.View.Click(rig.View.Node("$I27"));
         Assert.Equal("(none)", rig.View.GoldText);
         rig.Settle();
 
         Assert.Equal(3, rig.Gateway.Calls("NavigateTo"));
-        Assert.Equal("K$31", rig.View.GoldText);
-        Assert.Equal(K31, rig.Snapshot.GoldTarget);
+        Assert.Equal("$I27", rig.View.GoldText);
+        Assert.Equal(Rig.Loc("I27"), rig.Snapshot.GoldTarget);
     }
 
     [Fact]
@@ -66,14 +66,13 @@ public class SessionRobustnessTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.Click("K$31");
         rig.Gateway.Busy["ReadCell"] = 1;
 
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
 
         Assert.Equal(K31, rig.Snapshot.Root);
         Assert.Equal(new[] { K33 }, rig.Snapshot.Stack);
-        Assert.Equal(2, rig.Gateway.NavigateCalls.Count); // both presses navigate; the retry does not navigate again
+        Assert.Single(rig.Gateway.NavigateCalls); // the retry of the read does not navigate again
     }
 
     [Fact]
@@ -81,7 +80,7 @@ public class SessionRobustnessTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.DoubleClick("K$31");
+        rig.Click("K$31");
         rig.Gateway.Busy["ReadCell"] = 1;
 
         rig.Back();
@@ -497,13 +496,13 @@ public class SessionRobustnessTests
     {
         var rig = Rig.VideoModel();
         rig.Start();
-        rig.Click("K$31");
+        rig.Click("$I27");
 
         rig.Session.Close();
 
         // The session never moves the selection on close; the gateway's EndSession keeps the current one visible.
         Assert.Single(rig.Gateway.NavigateCalls);
-        Assert.Equal(K31, rig.Gateway.Active);
+        Assert.Equal(Rig.Loc("I27"), rig.Gateway.Active);
         Assert.Equal(1, rig.Gateway.EndSessionCalls);
     }
 

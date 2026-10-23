@@ -46,7 +46,7 @@ try {
     Save-FeShot $fe 'click-name' | Out-Null
 
     $iK31 = Find-FeIndex $text 'K$31' 1 1
-    Note "DoubleClick K`$31: $(Invoke-Fe $fe 'FE_Test_DoubleClick' $iK31)"
+    Note "Click K`$31 (drills): $(Invoke-Fe $fe 'FE_Test_Click' $iK31)"
     $s = Wait-FeState $fe { $_.view.displayText -like '=J31*' -and -not $_.view.isLoading }
     Note "after drill: root=$($s.session.root.address) text=$($s.view.displayText) stack=$(@($s.session.stack).Count) back=$($s.view.backEnabled)"
     Note "overlay=$($s.overlay | ConvertTo-Json -Compress)"
@@ -54,7 +54,7 @@ try {
 
     $text = $s.view.displayText
     $iJ31 = Find-FeIndex $text 'J31' 1 1
-    Invoke-Fe $fe 'FE_Test_DoubleClick' $iJ31 | Out-Null
+    Invoke-Fe $fe 'FE_Test_Click' $iJ31 | Out-Null
     $s = Wait-FeState $fe { $_.view.displayText -like '=SUM(*' -and -not $_.view.isLoading }
     Note "after drill 2: root=$($s.session.root.address) text=$($s.view.displayText)"
     $text = $s.view.displayText

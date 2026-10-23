@@ -394,6 +394,8 @@ internal sealed class FormulaView : FrameworkElement
                 NodeClicked?.Invoke(this, node);
                 NodeDoubleClicked?.Invoke(this, node);
                 break;
+            case PressAction.Ignore:
+                break;
         }
     }
 
@@ -452,7 +454,7 @@ internal sealed class FormulaView : FrameworkElement
     private void Reset(FormulaDisplay? display)
     {
         CancelTooltip();
-        _doubleClicks.Reset();
+        _doubleClicks.ContentReplaced();
         _hoverNode = null;
         _hoverInfo = NoInfo;
         _gold = null;
