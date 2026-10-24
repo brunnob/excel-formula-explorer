@@ -10,7 +10,7 @@
     <RootNamespace>FormulaExplorer.Setup</RootNamespace>
     <ApplicationIcon>setup.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Product>Formula Explorer</Product>
     <!-- One self-contained exe: it must run on machines that do not have .NET yet. -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

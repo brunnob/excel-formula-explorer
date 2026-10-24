@@ -13,7 +13,7 @@ internal static class Program
 {
     private const string Title = "Formula Explorer Setup";
     private const string DisplayName = "Formula Explorer for Excel";
-    private const string Version = "1.0.0";
+    private const string Version = "1.1.0";
     private const string ExcelOptionsKey = @"Software\Microsoft\Office\16.0\Excel\Options";
     private const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\FormulaExplorer";
     private const string RuntimeDownload = "https://aka.ms/dotnet/10.0/windowsdesktop-runtime-win-x64.exe";
